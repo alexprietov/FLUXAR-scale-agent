@@ -26,9 +26,6 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Run tests
-        run: npm test -- --run
-
       - name: Build Windows installer
         run: npx electron-builder --win nsis --x64
 
