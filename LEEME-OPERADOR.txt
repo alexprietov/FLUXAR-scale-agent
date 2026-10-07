@@ -1,0 +1,143 @@
+============================================================
+  FLUXAR Scale Agent v0.1.0
+  Prueba Local de Báscula
+  MODO DE PRUEBA — NO ENVÍA DATOS A FLUXAR
+============================================================
+
+Este programa permite conectar una báscula al puerto serial
+de tu computadora y ver el peso en tiempo real.
+
+NO requiere internet.
+NO requiere login.
+NO envía datos a ningún servidor.
+
+============================================================
+REQUISITOS
+============================================================
+
+- Windows 10 o Windows 11 (64 bits)
+- Node.js 20 LTS (ver PASO 1)
+- La báscula conectada al puerto COM de la computadora
+
+============================================================
+PASO 1 — Instalar Node.js (solo la primera vez)
+============================================================
+
+1. Abre el navegador y ve a:
+   https://nodejs.org
+
+2. Descarga la versión "20.x LTS" para Windows.
+
+3. Ejecuta el instalador y acepta todas las opciones
+   predeterminadas.
+
+4. Cuando termine, cierra y vuelve a abrir cualquier
+   ventana de comandos que tengas abierta.
+
+Si ya tienes Node.js instalado, puedes saltar este paso.
+Para verificar: ejecuta VERIFICAR-WINDOWS.bat
+
+============================================================
+PASO 2 — Descomprimir el ZIP
+============================================================
+
+1. Haz clic derecho en el archivo ZIP.
+2. Selecciona "Extraer todo..." o "Extract All..."
+3. Elige una carpeta fácil de encontrar, por ejemplo:
+   C:\FLUXAR\scale-agent\
+4. Haz clic en "Extraer".
+
+============================================================
+PASO 3 — Iniciar la aplicación
+============================================================
+
+Dentro de la carpeta extraída, haz doble clic en:
+
+   INICIAR-PRUEBA-LOCAL.bat
+
+La primera vez tardará unos minutos en instalar
+las dependencias. Las siguientes veces abrirá directo.
+
+Se abrirá una ventana negra (normal) y luego la
+aplicación FLUXAR Scale Agent.
+
+============================================================
+PASO 4 — Abrir Prueba Local
+============================================================
+
+En la aplicación, busca la pestaña o botón:
+
+   "Prueba Local"
+
+Haz clic en él.
+
+============================================================
+PASO 5 — Seleccionar el puerto COM
+============================================================
+
+1. En la pantalla de Prueba Local, haz clic en
+   "Actualizar puertos" o "Listar puertos".
+
+2. Verás una lista de puertos COM disponibles,
+   por ejemplo: COM3, COM4, COM7, etc.
+
+3. Selecciona el puerto donde está conectada la báscula.
+   (Si no sabes cuál es, revisa el Administrador de
+    dispositivos de Windows → Puertos COM y LPT)
+
+4. Configura:
+   - Velocidad (baud): 9600 (valor más común)
+   - Bits de datos: 8
+   - Paridad: None
+   - Bits de parada: 1
+
+5. Haz clic en "Abrir puerto" o "Iniciar".
+
+============================================================
+PASO 6 — Probar la báscula
+============================================================
+
+Una vez abierto el puerto verás:
+
+- Últimas tramas recibidas (texto crudo de la báscula)
+- Peso interpretado (en kg)
+- Estado de estabilidad (Estable / Inestable)
+
+Coloca peso en la báscula y verifica que los valores
+cambien en pantalla.
+
+Si ves tramas pero el peso no se interpreta correctamente,
+cambia el protocolo a "Generic Text" y reporta las
+tramas al equipo de FLUXAR.
+
+============================================================
+SOLUCIÓN DE PROBLEMAS
+============================================================
+
+PROBLEMA: La ventana negra se cierra inmediatamente
+SOLUCIÓN: Ejecuta VERIFICAR-WINDOWS.bat para diagnosticar
+
+PROBLEMA: "npm ci falló" / error de compilación
+SOLUCIÓN: Puede requerir Visual Studio Build Tools.
+          Contacta al equipo de FLUXAR con el mensaje
+          de error exacto.
+
+PROBLEMA: No aparece ningún puerto COM
+SOLUCIÓN: Verifica que la báscula esté encendida y
+          conectada. Revisa el Administrador de
+          dispositivos de Windows.
+
+PROBLEMA: El peso no cambia / siempre es 0
+SOLUCIÓN: Verifica la velocidad (baud rate). Prueba
+          con 4800, 9600, 19200, o 38400.
+
+============================================================
+CONTACTO
+============================================================
+
+Si tienes problemas, guarda el mensaje de error exacto
+y contacta al equipo de FLUXAR.
+
+Versión: 0.1.0
+Fecha: Octubre 2026
+============================================================

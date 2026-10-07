@@ -1,0 +1,138 @@
+═══════════════════════════════════════════════════════════════════════
+  FLUXAR Scale Agent 0.1.14 — Cómo obtener el instalador .exe
+═══════════════════════════════════════════════════════════════════════
+
+El instalador Windows (.exe) se genera automáticamente en GitHub Actions
+usando una máquina Windows real (windows-latest).
+
+NO necesitas instalar nada en tu PC para generarlo.
+NO necesitas Node.js, npm, Visual Studio, ni CMD.
+
+═══════════════════════════════════════════════════════════════════════
+PASO 1 — Ir al repositorio en GitHub
+═══════════════════════════════════════════════════════════════════════
+
+Abre en tu navegador:
+  https://github.com/TU-USUARIO/TU-REPO
+
+(Si no sabes la URL exacta, pregúntale a quien administra el repositorio.)
+
+═══════════════════════════════════════════════════════════════════════
+PASO 2 — Ejecutar el workflow manualmente
+═══════════════════════════════════════════════════════════════════════
+
+1. Haz clic en la pestaña "Actions" (arriba, entre "Pull requests" y "Projects")
+
+2. En la lista de la izquierda, busca:
+     "Scale Agent — Windows Installer"
+
+3. Haz clic en ese workflow.
+
+4. Haz clic en el botón azul "Run workflow" (lado derecho).
+
+5. En el campo "Motivo del build manual" escribe:
+     Build 0.1.14 para Alejandro
+
+6. Haz clic en "Run workflow" (botón verde).
+
+═══════════════════════════════════════════════════════════════════════
+PASO 3 — Esperar (aprox. 5-10 minutos)
+═══════════════════════════════════════════════════════════════════════
+
+Verás un círculo amarillo girando → cuando se ponga verde ✅ terminó.
+
+Si se pone rojo ❌, hay un error. Haz clic en el run fallido y busca
+el paso en rojo para ver el mensaje de error.
+
+═══════════════════════════════════════════════════════════════════════
+PASO 4 — Descargar el instalador
+═══════════════════════════════════════════════════════════════════════
+
+1. Haz clic en el run completado (el que tiene ✅ verde).
+
+2. Baja hasta la sección "Artifacts" (al final de la página).
+
+3. Verás:
+     FLUXAR-Scale-Agent-Setup-0.1.14-Windows-x64
+
+4. Haz clic en ese nombre → se descarga un ZIP.
+
+5. Extrae el ZIP → dentro encontrarás:
+     FLUXAR Scale Agent Setup 0.1.14.exe
+
+═══════════════════════════════════════════════════════════════════════
+PASO 5 — Instalar en la PC de la báscula
+═══════════════════════════════════════════════════════════════════════
+
+1. Copia el .exe a la PC de la báscula (USB, red, etc.)
+
+2. Doble clic en el .exe
+
+3. Sigue el asistente:
+   - Directorio: acepta el default o cambia si quieres
+   - Crear acceso directo en escritorio: ✅ (recomendado)
+   - Al finalizar: el Agent se inicia automáticamente
+
+4. El ícono aparece en la bandeja del sistema (esquina inferior derecha)
+
+═══════════════════════════════════════════════════════════════════════
+QUÉ SE PRESERVA AL INSTALAR 0.1.14 SOBRE 0.1.13
+═══════════════════════════════════════════════════════════════════════
+
+✅ Token de enrollment (no necesitas re-enrolar)
+✅ station_id = 1
+✅ API URL configurada
+✅ COM4 → Camionera 80t
+✅ COM3 → Mediana 5t
+✅ Preferencias (autostart, start_minimized)
+✅ Historial de lecturas en el servidor
+
+El instalador NO borra los datos de la aplicación.
+
+═══════════════════════════════════════════════════════════════════════
+QUÉ CAMBIA EN 0.1.14 vs 0.1.13
+═══════════════════════════════════════════════════════════════════════
+
+✅ FIX: La app ya NO abre ventana al arrancar con Windows
+   (antes wasOpenedAsHidden siempre era false → ventana visible)
+   Ahora arranca oculta en la bandeja como debe ser.
+
+✅ Instalador NSIS profesional (en lugar de TAR de código fuente)
+   - Doble clic para instalar
+   - Acceso directo en escritorio
+   - Aparece en "Agregar o quitar programas"
+   - Desinstalador incluido
+
+═══════════════════════════════════════════════════════════════════════
+RUTA DE INSTALACIÓN
+═══════════════════════════════════════════════════════════════════════
+
+Por defecto (per-user, sin necesitar permisos de administrador):
+  C:\Users\TU-USUARIO\AppData\Local\Programs\FLUXAR Scale Agent\
+
+Datos de la app (config, token, logs) — NO se borran al desinstalar:
+  C:\Users\TU-USUARIO\AppData\Roaming\fluxar-scale-agent\
+
+═══════════════════════════════════════════════════════════════════════
+PREGUNTAS FRECUENTES
+═══════════════════════════════════════════════════════════════════════
+
+P: ¿Necesito desinstalar 0.1.13 primero?
+R: No. El instalador 0.1.14 actualiza sobre la versión anterior.
+
+P: ¿Se pierde el enrollment/token?
+R: No. El token está en %APPDATA%\fluxar-scale-agent\ y no se toca.
+
+P: ¿Aparece CMD o terminal al instalar?
+R: No. Es un instalador gráfico normal de Windows.
+
+P: ¿Necesita permisos de administrador?
+R: No. Instala en AppData\Local\Programs (per-user).
+
+P: ¿Cómo sé que está corriendo?
+R: El ícono verde de FLUXAR aparece en la bandeja del sistema.
+
+P: ¿Cómo abro la ventana si está oculta?
+R: Doble clic en el ícono de la bandeja, o clic derecho → "Abrir".
+
+═══════════════════════════════════════════════════════════════════════

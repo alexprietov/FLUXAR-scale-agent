@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FLUXAR Scale Agent</title>
+  <style>
+    /* ─── Reset & base ─────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f172a;
+      --bg2:       #1e293b;
+      --bg3:       #334155;
+      --border:    #334155;
+      --text:      #f1f5f9;
+      --text2:     #94a3b8;
+      --text3:     #64748b;
+      --green:     #10b981;
+      --yellow:    #f59e0b;
+      --red:       #ef4444;
+      --blue:      #3b82f6;
+      --orange:    #f97316;
+      --radius:    8px;
+      --font:      -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── Scrollbar ─────────────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+
+    /* ─── Header ────────────────────────────────────────────────────────────── */
+    #header {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      -webkit-app-region: drag;
+    }
+    #header .left { display: flex; align-items: center; gap: 10px; }
+    #header .app-name { font-size: 15px; font-weight: 600; letter-spacing: -0.3px; }
+    #header .app-name span { color: var(--green); }
+    #header .mode-badge {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+      padding: 2px 8px; border-radius: 4px; text-transform: uppercase;
+    }
+    #header .mode-badge.mock {
+      background: rgba(245,158,11,0.15); color: var(--yellow); border: 1px solid rgba(245,158,11,0.3);
+    }
+    #header .mode-badge.prod {
+      background: rgba(16,185,129,0.1); color: var(--green); border: 1px solid rgba(16,185,129,0.2);
+    }
+    #header .right { display: flex; align-items: center; gap: 12px; -webkit-app-region: no-drag; }
+    #server-status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); }
+    #server-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text3); }
+    #server-dot.connected { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    #server-dot.disconnected { background: var(--text3); }
+    #server-dot.unauthorized { background: var(--red); }
+    #server-dot.auth-error { background: var(--red); box-shadow: 0 0 6px var(--red); }
+
+    /* ─── Nav tabs ──────────────────────────────────────────────────────────── */
+    #nav {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      padding: 0 20px;
+      flex-shrink: 0;
+    }
+    .nav-tab {
+      padding: 10px 16px; font-size: 13px; color: var(--text2);
+      cursor: pointer; border-bottom: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+      user-select: none;
+    }
+    .nav-tab:hover { color: var(--text); }
+    .nav-tab.active { color: var(--text); border-bottom-color: var(--green); }
+
+    /* ─── Content ───────────────────────────────────────────────────────────── */
+    #content { flex: 1; overflow-y: auto; }
+    .page { display: none; padding: 20px; }
+    .page.active { display: block; }
+
+    /* ─── Pantalla sin vincular ─────────────────────────────────────────────── */
+    #page-unlinked {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      height: 100%; min-height: 400px; gap: 20px; text-align: center;
+      padding: 24px;
+    }
+    #page-unlinked .logo-area { margin-bottom: 4px; }
+    #page-unlinked .logo-area .brand { font-size: 28px; font-weight: 700; }
+    #page-unlinked .logo-area .brand span { color: var(--green); }
+    #page-unlinked .logo-area .sub { font-size: 14px; color: var(--text2); margin-top: 4px; }
+    #page-unlinked .desc { color: var(--text2); font-size: 15px; max-width: 400px; line-height: 1.6; }
+
+    /* ─── Dos acciones en pantalla sin vincular ─────────────────────────────── */
+    .unlinked-actions {
+      display: flex; flex-direction: column; gap: 12px; width: 360px;
+    }
+    .action-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px 24px;
+      display: flex; flex-direction: column; gap: 8px;
+      cursor: pointer; transition: border-color 0.15s, background 0.15s;
+      text-align: left;
+    }
+    .action-card:hover { border-color: var(--green); background: rgba(16,185,129,0.04); }
+    .action-card.secondary:hover { border-color: var(--blue); background: rgba(59,130,246,0.04); }
+    .action-card .ac-title {
+      font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px;
+    }
+    .action-card .ac-title .ac-icon { font-size: 18px; }
+    .action-card .ac-desc { font-size: 12px; color: var(--text3); line-height: 1.5; }
+    .action-card .ac-badge {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+      padding: 2px 7px; border-radius: 4px; text-transform: uppercase;
+      background: rgba(245,158,11,0.15); color: var(--yellow);
+      border: 1px solid rgba(245,158,11,0.3); align-self: flex-start;
+    }
+
+    /* ─── Pantalla Prueba Local ─────────────────────────────────────────────── */
+    #page-local-test {
+      display: none; flex-direction: column;
+      height: 100%; overflow-y: auto;
+    }
+    #page-local-test.active { display: flex; }
+
+    .local-test-banner {
+      background: rgba(245,158,11,0.1); border-bottom: 1px solid rgba(245,158,11,0.3);
+      padding: 8px 20px; font-size: 11px; font-weight: 700;
+      color: var(--yellow); text-align: center; letter-spacing: 0.5px;
+      text-transform: uppercase; flex-shrink: 0;
+    }
+
+    .local-test-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; flex: 1; }
+
+    .lt-section {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px 20px;
+    }
+    .lt-section h3 {
+      font-size: 12px; font-weight: 600; color: var(--text3);
+      text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 14px;
+    }
+
+    .lt-config-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    }
+    .lt-config-grid .form-row { margin-bottom: 0; }
+    .lt-config-full { grid-column: 1 / -1; }
+
+    .lt-status-row {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+    }
+    .lt-status-dot {
+      width: 10px; height: 10px; border-radius: 50%; background: var(--text3); flex-shrink: 0;
+    }
+    .lt-status-dot.open { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .lt-status-dot.error { background: var(--red); }
+    .lt-status-label { font-size: 13px; font-weight: 500; }
+
+    .lt-weight-display {
+      font-size: 48px; font-weight: 700; letter-spacing: -2px;
+      font-variant-numeric: tabular-nums; color: var(--text3);
+      margin: 4px 0 8px;
+    }
+    .lt-weight-display.has-data { color: var(--text); }
+    .lt-weight-display.stable { color: var(--green); }
+
+    .lt-stability {
+      font-size: 12px; font-weight: 600; padding: 3px 10px;
+      border-radius: 4px; display: inline-block; text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .lt-stability.stable {
+      background: rgba(16,185,129,0.1); color: var(--green);
+      border: 1px solid rgba(16,185,129,0.3);
+    }
+    .lt-stability.unstable {
+      background: rgba(245,158,11,0.1); color: var(--yellow);
+      border: 1px solid rgba(245,158,11,0.3);
+    }
+    .lt-stability.no-data {
+      background: rgba(100,116,139,0.1); color: var(--text3);
+      border: 1px solid rgba(100,116,139,0.2);
+    }
+
+    .lt-last-frame {
+      font-family: 'Courier New', monospace; font-size: 12px;
+      color: var(--text2); background: var(--bg); border: 1px solid var(--border);
+      border-radius: 4px; padding: 8px 10px; word-break: break-all;
+      min-height: 32px; margin-top: 8px;
+    }
+
+    .lt-frames-list {
+      font-family: 'Courier New', monospace; font-size: 11px;
+      color: var(--text2); display: flex; flex-direction: column; gap: 4px;
+      max-height: 200px; overflow-y: auto;
+    }
+    .lt-frame-item {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 4px; padding: 5px 8px;
+      display: flex; gap: 10px; align-items: baseline;
+    }
+    .lt-frame-time { color: var(--text3); flex-shrink: 0; font-size: 10px; }
+    .lt-frame-raw { word-break: break-all; flex: 1; }
+    .lt-frame-weight { color: var(--green); flex-shrink: 0; font-size: 10px; }
+
+    .lt-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    /* ─── Inputs & buttons ──────────────────────────────────────────────────── */
+    input[type="text"], input[type="number"], select {
+      width: 100%; padding: 9px 12px;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text); font-size: 13px;
+      outline: none; transition: border-color 0.15s;
+    }
+    input[type="text"]:focus, input[type="number"]:focus, select:focus {
+      border-color: var(--green);
+    }
+    select option { background: var(--bg2); }
+
+    .btn {
+      padding: 9px 18px; border-radius: 6px; font-size: 13px; font-weight: 500;
+      cursor: pointer; border: none; transition: opacity 0.15s, transform 0.1s;
+      user-select: none;
+    }
+    .btn:hover { opacity: 0.9; }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary { background: var(--green); color: #fff; }
+    .btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+    .btn-danger { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+    .btn-warning { background: rgba(245,158,11,0.15); color: var(--yellow); border: 1px solid rgba(245,158,11,0.3); }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ─── Página principal — básculas ───────────────────────────────────────── */
+    .section-title {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.8px;
+      color: var(--text3); text-transform: uppercase; margin-bottom: 12px;
+    }
+    .station-info {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px 16px;
+      display: flex; gap: 24px; margin-bottom: 20px;
+    }
+    .station-info .field { display: flex; flex-direction: column; gap: 2px; }
+    .station-info .field label { font-size: 11px; color: var(--text3); }
+    .station-info .field span { font-size: 13px; font-weight: 500; }
+
+    /* ─── Device card ───────────────────────────────────────────────────────── */
+    .device-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px;
+      margin-bottom: 12px; transition: border-color 0.2s;
+    }
+    .device-card.stable { border-left: 3px solid var(--green); }
+    .device-card.unstable { border-left: 3px solid var(--yellow); }
+    .device-card.error { border-left: 3px solid var(--red); }
+    .device-card.disconnected { border-left: 3px solid var(--text3); }
+
+    .device-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .device-name { font-size: 14px; font-weight: 600; }
+    .device-meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
+    .device-actions { display: flex; gap: 8px; }
+
+    .device-weight {
+      font-size: 36px; font-weight: 700; letter-spacing: -1px;
+      font-variant-numeric: tabular-nums; margin: 8px 0;
+      color: var(--text);
+    }
+    .device-weight.stable { color: var(--green); }
+    .device-weight.no-data { color: var(--text3); font-size: 24px; }
+
+    .device-footer { display: flex; align-items: center; gap: 16px; margin-top: 8px; }
+    .status-pill {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 600; padding: 3px 8px;
+      border-radius: 4px; text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    .status-pill .dot { width: 6px; height: 6px; border-radius: 50%; }
+    .status-pill.ESTABLE { background: rgba(16,185,129,0.1); color: var(--green); }
+    .status-pill.ESTABLE .dot { background: var(--green); }
+    .status-pill.INESTABLE { background: rgba(245,158,11,0.1); color: var(--yellow); }
+    .status-pill.INESTABLE .dot { background: var(--yellow); }
+    .status-pill.ERROR { background: rgba(239,68,68,0.1); color: var(--red); }
+    .status-pill.ERROR .dot { background: var(--red); }
+    .status-pill.DESCONECTADO, .status-pill.CONECTANDO, .status-pill.SIN_SEÑAL {
+      background: rgba(100,116,139,0.15); color: var(--text3);
+    }
+    .status-pill.DESCONECTADO .dot, .status-pill.CONECTANDO .dot, .status-pill.SIN_SEÑAL .dot {
+      background: var(--text3);
+    }
+    .last-reading { font-size: 11px; color: var(--text3); }
+
+    /* ─── Device card v2 (F4-BASCULAS-07) ──────────────────────────────────── */
+    .device-weight-row {
+      display: flex; align-items: baseline; gap: 10px; margin: 8px 0 4px;
+    }
+    .device-weight-value {
+      font-size: 36px; font-weight: 700; letter-spacing: -1px;
+      font-variant-numeric: tabular-nums; color: var(--text);
+    }
+    .device-not-capturable {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+      color: var(--red); background: rgba(239,68,68,0.1);
+      padding: 2px 6px; border-radius: 4px; text-transform: uppercase;
+    }
+    .device-stability {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+      text-transform: uppercase; margin-bottom: 8px;
+    }
+    .device-stability.stability-stable { color: var(--green); }
+    .device-stability.stability-moving { color: var(--yellow); }
+    .device-serial-badge {
+      font-size: 11px; font-weight: 600; padding: 2px 8px;
+      border-radius: 4px; text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    .device-serial-badge.serial-open {
+      background: rgba(16,185,129,0.12); color: var(--green);
+    }
+    .device-serial-badge.serial-closed {
+      background: rgba(239,68,68,0.1); color: var(--red);
+    }
+    .device-last-read { font-size: 11px; color: var(--text3); }
+    .device-error {
+      font-size: 11px; color: var(--red); margin-top: 6px;
+      padding: 4px 8px; background: rgba(239,68,68,0.08); border-radius: 4px;
+    }
+
+    /* ─── No devices ────────────────────────────────────────────────────────── */
+    .empty-state {
+      text-align: center; padding: 48px 24px; color: var(--text2);
+    }
+    .empty-state h3 { font-size: 15px; margin-bottom: 8px; }
+    .empty-state p { font-size: 13px; color: var(--text3); }
+
+    /* ─── Modal ─────────────────────────────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100; backdrop-filter: blur(2px);
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 24px; width: 420px; max-width: 90vw;
+    }
+    .modal h2 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+    .modal .modal-sub { font-size: 12px; color: var(--text2); margin-bottom: 20px; }
+    .form-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    .form-row label { font-size: 12px; color: var(--text2); }
+    .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+    /* ─── Configuración ─────────────────────────────────────────────────────── */
+    .settings-section {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px; margin-bottom: 16px;
+    }
+    .settings-section h3 { font-size: 13px; font-weight: 600; margin-bottom: 14px; }
+    .settings-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+    }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-row .label { font-size: 13px; }
+    .settings-row .sublabel { font-size: 11px; color: var(--text3); margin-top: 2px; }
+    .toggle {
+      width: 36px; height: 20px; border-radius: 10px; background: var(--bg3);
+      cursor: pointer; position: relative; transition: background 0.2s; border: none;
+    }
+    .toggle.on { background: var(--green); }
+    .toggle::after {
+      content: ''; position: absolute; top: 2px; left: 2px;
+      width: 16px; height: 16px; border-radius: 50%; background: #fff;
+      transition: transform 0.2s;
+    }
+    .toggle.on::after { transform: translateX(16px); }
+
+    /* ─── Diagnóstico ───────────────────────────────────────────────────────── */
+    .diag-block {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 6px; padding: 14px; font-family: 'Courier New', monospace;
+      font-size: 12px; line-height: 1.7; color: var(--text2);
+      white-space: pre-wrap; word-break: break-all; max-height: 400px; overflow-y: auto;
+    }
+    .diag-actions { display: flex; gap: 10px; margin-top: 12px; }
+
+    /* ─── Error / success message ───────────────────────────────────────────── */
+    .error-msg {
+      background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 6px; padding: 10px 14px; font-size: 12px; color: var(--red);
+      margin-top: 10px; display: none;
+    }
+    .error-msg.visible { display: block; }
+    .success-msg {
+      background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3);
+      border-radius: 6px; padding: 10px 14px; font-size: 12px; color: var(--green);
+      margin-top: 10px; display: none;
+    }
+    .success-msg.visible { display: block; }
+
+    /* ─── Mock banner ───────────────────────────────────────────────────────── */
+    #mock-banner {
+      background: rgba(245,158,11,0.1); border-bottom: 1px solid rgba(245,158,11,0.3);
+      padding: 6px 20px; font-size: 11px; font-weight: 600;
+      color: var(--yellow); text-align: center; letter-spacing: 0.3px;
+      display: none;
+    }
+    #mock-banner.visible { display: block; }
+  </style>
+</head>
+<body>
+
+<!-- Mock banner -->
+<div id="mock-banner">⚠️  MODO DE PRUEBA — Los datos no se envían a producción</div>
+
+<!-- Header -->
+<div id="header">
+  <div class="left">
+    <div class="app-name"><span>FLUXAR</span> Scale Agent</div>
+    <div id="mode-badge" class="mode-badge mock">Modo de prueba</div>
+  </div>
+  <div class="right">
+    <div id="server-status">
+      <div id="server-dot" class="disconnected"></div>
+      <span id="server-label">Sin conexión</span>
+    </div>
+  </div>
+</div>
+
+<!-- Nav (solo visible cuando vinculado) -->
+<div id="nav" style="display:none">
+  <div class="nav-tab active" data-page="main">Básculas</div>
+  <div class="nav-tab" data-page="settings">Configuración</div>
+  <div class="nav-tab" data-page="diagnostic">Diagnóstico</div>
+</div>
+
+<!-- Content -->
+<div id="content">
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- Pantalla sin vincular — dos acciones claras                            -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <div id="page-unlinked" style="display:flex">
+    <div class="logo-area">
+      <div class="brand"><span>FLUXAR</span> Scale Agent</div>
+      <div class="sub">Conector de básculas</div>
+    </div>
+    <p class="desc">Esta computadora todavía no está vinculada con FLUXAR.</p>
+
+    <div class="unlinked-actions">
+
+      <!-- Acción 1: Prueba Local -->
+      <div class="action-card" id="btn-go-local-test">
+        <div class="ac-title">
+          <span class="ac-icon">🔌</span>
+          Probar báscula localmente
+        </div>
+        <div class="ac-badge">Sin internet · Sin FLUXAR</div>
+        <div class="ac-desc">
+          Conecta un puerto COM, lee tramas en tiempo real y verifica el peso
+          sin necesidad de vincularse con FLUXAR.
+        </div>
+      </div>
+
+      <!-- Acción 2: Vincular -->
+      <div class="action-card secondary" id="btn-go-enroll">
+        <div class="ac-title">
+          <span class="ac-icon">🔗</span>
+          Vincular con FLUXAR
+        </div>
+        <div class="ac-desc">
+          Ingresa el código de vinculación generado desde el módulo de Básculas
+          en FLUXAR para conectar esta estación.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- Pantalla de enrollment (se muestra al hacer clic en "Vincular")        -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <div id="page-enroll" style="display:none; flex-direction:column; align-items:center; justify-content:center; height:100%; min-height:400px; gap:20px; text-align:center; padding:24px;">
+    <div class="logo-area">
+      <div class="brand"><span>FLUXAR</span> Scale Agent</div>
+      <div class="sub">Vincular estación</div>
+    </div>
+    <div class="unlinked-actions">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:28px 32px;display:flex;flex-direction:column;gap:16px;">
+        <h3 style="font-size:15px;font-weight:600;">Vincular con FLUXAR</h3>
+        <p style="font-size:12px;color:var(--text2);line-height:1.5;">
+          Ingresa el código de vinculación generado desde el módulo de Básculas en FLUXAR.
+        </p>
+        <div class="form-row">
+          <label>Código de vinculación</label>
+          <input type="text" id="enroll-code" placeholder="Ej. ABC123XY" autocomplete="off" spellcheck="false" />
+        </div>
+        <div id="enroll-error" class="error-msg"></div>
+        <button class="btn btn-primary" id="btn-enroll" style="width:100%">VINCULAR</button>
+        <button class="btn btn-secondary btn-sm" id="btn-back-from-enroll" style="width:100%">← Volver</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- Pantalla PRUEBA LOCAL                                                   -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <div id="page-local-test">
+
+    <div class="local-test-banner">
+      🔌 PRUEBA LOCAL — NO ENVÍA DATOS A FLUXAR
+    </div>
+
+    <div class="local-test-body">
+
+      <!-- Configuración del puerto -->
+      <div class="lt-section">
+        <h3>Configuración del puerto</h3>
+        <div class="lt-config-grid">
+
+          <div class="form-row lt-config-full">
+            <label>Puerto COM</label>
+            <select id="lt-com-port">
+              <option value="">Cargando puertos...</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <label>Baud rate</label>
+            <select id="lt-baud">
+              <option value="1200">1200</option>
+              <option value="2400">2400</option>
+              <option value="4800">4800</option>
+              <option value="9600" selected>9600</option>
+              <option value="19200">19200</option>
+              <option value="38400">38400</option>
+              <option value="57600">57600</option>
+              <option value="115200">115200</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <label>Data bits</label>
+            <select id="lt-databits">
+              <option value="8" selected>8</option>
+              <option value="7">7</option>
+              <option value="6">6</option>
+              <option value="5">5</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <label>Parity</label>
+            <select id="lt-parity">
+              <option value="none" selected>none</option>
+              <option value="even">even</option>
+              <option value="odd">odd</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <label>Stop bits</label>
+            <select id="lt-stopbits">
+              <option value="1" selected>1</option>
+              <option value="2">2</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <label>Protocolo</label>
+            <select id="lt-protocol">
+              <option value="GENERIC" selected>GENERIC (texto libre)</option>
+              <option value="BASYS">BASYS</option>
+            </select>
+          </div>
+
+        </div>
+
+        <div class="lt-actions" style="margin-top:4px;">
+          <button class="btn btn-primary" id="btn-lt-open">Abrir puerto</button>
+          <button class="btn btn-danger" id="btn-lt-close" disabled>Cerrar puerto</button>
+          <button class="btn btn-secondary btn-sm" id="btn-lt-refresh-ports">↻ Actualizar puertos</button>
+        </div>
+        <div id="lt-open-error" class="error-msg"></div>
+      </div>
+
+      <!-- Estado y peso -->
+      <div class="lt-section">
+        <h3>Estado del puerto</h3>
+        <div class="lt-status-row">
+          <div class="lt-status-dot" id="lt-status-dot"></div>
+          <span class="lt-status-label" id="lt-status-label">Puerto cerrado</span>
+        </div>
+
+        <div class="lt-weight-display" id="lt-weight-display">— kg</div>
+        <span class="lt-stability no-data" id="lt-stability-badge">Sin datos</span>
+
+        <div style="margin-top:12px;">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">Última trama recibida</div>
+          <div class="lt-last-frame" id="lt-last-frame">—</div>
+        </div>
+      </div>
+
+      <!-- Tramas crudas -->
+      <div class="lt-section">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <h3 style="margin-bottom:0;">Tramas crudas (máx. 10)</h3>
+          <button class="btn btn-secondary btn-sm" id="btn-lt-clear-frames">Limpiar</button>
+        </div>
+        <div class="lt-frames-list" id="lt-frames-list">
+          <div style="color:var(--text3);font-size:12px;padding:8px 0;">Sin tramas aún.</div>
+        </div>
+      </div>
+
+      <!-- Acciones -->
+      <div style="display:flex;gap:10px;padding-bottom:8px;">
+        <button class="btn btn-secondary" id="btn-lt-back">← Volver al inicio</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- Páginas de app vinculada                                                -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+
+  <!-- Página principal -->
+  <div id="page-main" class="page">
+    <div class="station-info">
+      <div class="field">
+        <label>Estación</label>
+        <span id="station-name">—</span>
+      </div>
+      <div class="field">
+        <label>Sucursal</label>
+        <span id="station-branch">—</span>
+      </div>
+      <div class="field">
+        <label>Versión</label>
+        <span id="app-version">0.1.0</span>
+      </div>
+    </div>
+
+    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;">
+      <span>Básculas</span>
+      <button class="btn btn-sm" id="btn-refresh-config" style="font-size:11px;padding:4px 10px;">Actualizar configuración</button>
+    </div>
+    <div id="devices-list"></div>
+  </div>
+
+  <!-- Configuración -->
+  <div id="page-settings" class="page">
+    <div class="settings-section">
+      <h3>General</h3>
+      <div class="settings-row">
+        <div>
+          <div class="label">Iniciar con Windows</div>
+          <div class="sublabel">Abrir FLUXAR Scale Agent al iniciar sesión</div>
+        </div>
+        <button class="toggle" id="toggle-autostart"></button>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="label">Iniciar minimizado</div>
+          <div class="sublabel">Al arrancar automáticamente, ocultar ventana a la bandeja</div>
+        </div>
+        <button class="toggle on" id="toggle-start-minimized"></button>
+      </div>
+    </div>
+
+    <div class="settings-section" id="settings-station-section">
+      <h3>Estación</h3>
+      <div class="settings-row">
+        <div>
+          <div class="label" id="settings-station-name">—</div>
+          <div class="sublabel" id="settings-station-branch">—</div>
+        </div>
+        <button class="btn btn-danger btn-sm" id="btn-unlink">Desvincular</button>
+      </div>
+    </div>
+
+    <div class="settings-section" id="settings-api-section" style="display:none">
+      <h3>Servidor FLUXAR <span style="font-size:10px;color:var(--text3);font-weight:400">(avanzado)</span></h3>
+      <div class="settings-row">
+        <div class="label">URL base</div>
+        <span id="settings-api-url" style="font-size:12px;color:var(--text3)"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Diagnóstico -->
+  <div id="page-diagnostic" class="page">
+    <div class="settings-section">
+      <h3>Diagnóstico del sistema</h3>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:14px">
+        Información técnica para soporte. No incluye tokens ni credenciales.
+      </p>
+      <div id="diag-content" class="diag-block">Cargando...</div>
+      <div class="diag-actions">
+        <button class="btn btn-secondary btn-sm" id="btn-refresh-diag">Actualizar</button>
+        <button class="btn btn-secondary btn-sm" id="btn-copy-diag">Copiar diagnóstico</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal: Configurar báscula -->
+<div id="modal-device" class="modal-overlay hidden">
+  <div class="modal">
+    <h2>Configurar báscula</h2>
+    <div class="modal-sub" id="modal-device-name">—</div>
+
+    <div class="form-row">
+      <label>Puerto COM</label>
+      <select id="modal-com-port">
+        <option value="">Seleccionar puerto...</option>
+      </select>
+    </div>
+
+    <div class="form-row-2">
+      <div class="form-row">
+        <label>Protocolo</label>
+        <select id="modal-protocol" disabled>
+          <option value="BASYS">BASYS</option>
+          <option value="GENERIC">GENERIC</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Baud rate</label>
+        <input type="number" id="modal-baud" value="9600" />
+      </div>
+    </div>
+
+    <div class="form-row-2">
+      <div class="form-row">
+        <label>Data bits</label>
+        <select id="modal-databits">
+          <option value="8" selected>8</option>
+          <option value="7">7</option>
+          <option value="6">6</option>
+          <option value="5">5</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Parity</label>
+        <select id="modal-parity">
+          <option value="none" selected>none</option>
+          <option value="even">even</option>
+          <option value="odd">odd</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label>Stop bits</label>
+      <select id="modal-stopbits">
+        <option value="1" selected>1</option>
+        <option value="2">2</option>
+      </select>
+    </div>
+
+    <div id="modal-error" class="error-msg"></div>
+    <div id="modal-success" class="success-msg"></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="btn-modal-cancel">Cancelar</button>
+      <button class="btn btn-primary" id="btn-modal-save">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Barra de diagnóstico de arranque (solo visible durante pruebas) -->
+<div id="diag-status-bar" style="
+  position:fixed; bottom:0; left:0; right:0;
+  background:rgba(15,23,42,0.92); border-top:1px solid #334155;
+  padding:4px 12px; font-size:10px; color:#64748b;
+  font-family:'Courier New',monospace; z-index:999;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+">Agente v0.1.14 — Iniciando...</div>
+
+<script src="renderer.js"></script>
+</body>
+</html>

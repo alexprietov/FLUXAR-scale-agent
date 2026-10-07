@@ -1,0 +1,84 @@
+{
+  "name": "fluxar-scale-agent",
+  "productName": "FLUXAR Scale Agent",
+  "version": "0.1.14",
+  "description": "Conector de básculas para FLUXAR ERP",
+  "main": "dist/main/main/main.js",
+  "scripts": {
+    "dev": "concurrently \"npm run build:main -- --watch\" \"npm run build:preload -- --watch\" \"npm run build:renderer -- --watch\" \"wait-on dist/main/main/main.js dist/preload/preload/preload.js dist/renderer/index.html && electron .\"",
+    "build": "npm run build:main && npm run build:preload && npm run build:renderer",
+    "build:main": "tsc -p tsconfig.main.json",
+    "build:preload": "tsc -p tsconfig.preload.json",
+    "build:renderer": "tsc -p tsconfig.renderer.json && node scripts/copy-renderer.js",
+    "type-check": "tsc -p tsconfig.main.json --noEmit && tsc -p tsconfig.preload.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "dist": "npm run build && electron-builder --win --x64",
+    "dist:portable": "npm run build && electron-builder --win --x64 --config.win.target=portable"
+  },
+  "dependencies": {
+    "serialport": "^12.0.0",
+    "electron-log": "^5.1.2",
+    "electron-store": "^8.2.0",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0",
+    "wait-on": "^7.2.0",
+    "@types/node": "^20.14.0",
+    "@types/uuid": "^9.0.8"
+  },
+  "build": {
+    "appId": "mx.fluxar.scale-agent",
+    "productName": "FLUXAR Scale Agent",
+    "copyright": "Copyright © 2026 FLUXAR",
+    "asar": true,
+    "compression": "maximum",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "assets/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "FLUXAR Scale Agent",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false
+    },
+    "extraResources": [
+      {
+        "from": "assets/",
+        "to": "assets/",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ]
+  }
+}
